@@ -1,0 +1,6 @@
+wordpress:
+  page: 'https://biovoxel.tech/wp-admin'
+  username: 'specify_user'
+  password: 'specify_pass'
+browser: 'chromedriver'
+#browser: '../chromedriver_89.0.4389.23.exe'
