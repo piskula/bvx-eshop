@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="application/javascript">
+        function justPrint() {
+            const checkedList = $("input[type='checkbox']:checked").map(function () {
+                return this.id;
+            }).get();
+            $("#status").text('clicked ' + checkedList);
+        }
+    </script>
+    <title>Orders</title>
+</head>
+<body>
+    <span>data from: {{ timestamp }}</span>
+    <h1>Orders for shipping</h1>
+    <ul>
+        {% for value in orders_for_shipping %}
+        <li>
+            <div>
+                <h3>
+                    <label style="width: 22rem; display: inline-block">
+                        <input type="checkbox" id="{{value.number}}">{{value.title}}
+                    </label>
+                    <span style="color: gray">{{ value.howOld.days }} days</span>
+                </h3>
+                <span style="width: 22rem; display: inline-block">{{value.address.street}}, {{value.address.city}}</span>
+                <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h1 style="color: darkred">Orders awaiting payment</h1>
+    <ul>
+        {% for value in orders_awaiting_payment %}
+        <li>
+            <div>
+                <h3>
+                    <label style="width: 22rem; display: inline-block">
+                        <input type="checkbox" id="{{value.number}}">{{value.title}}
+                    </label>
+                    <span style="color: red">{{ value.howOld.days }} days</span>
+                </h3>
+                <span style="width: 22rem; display: inline-block">{{value.address.street}}, {{value.address.city}}</span>
+                <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <button onclick="justPrint()">Send</button>
+    <span id="status"></span>
+</body>
+</html>
