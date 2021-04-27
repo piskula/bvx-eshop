@@ -6,6 +6,7 @@ import time
 import datetime
 from selenium import webdriver
 from gui.order import Order
+from gui.address import Address
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -49,6 +50,12 @@ def click_next_page():
     next_page.click()
 
 
+def extract_address(modal):
+    addressElemement = modal.find_element_by_css_selector('div.wc-order-preview-addresses > div:nth-child(2) > a')
+    addressLines = addressElemement.text.split("\n")
+    return Address(addressLines[0], addressLines[1] + ' ' + addressLines[2], addressLines[3])
+
+
 def get_order_from_row(row_data):
     number_wrapper = row_data.find_element_by_class_name('column-order_number')
     number_preview = number_wrapper.find_element_by_class_name('order-preview')
@@ -65,6 +72,7 @@ def get_order_from_row(row_data):
     total = total_wrapper.find_element_by_class_name('woocommerce-Price-amount').text.replace(total_currency, '')
 
     order_items = []
+    address = None
 
     number_preview.click()
     try:
@@ -74,6 +82,9 @@ def get_order_from_row(row_data):
                 .find_elements_by_css_selector('tr.wc-order-preview-table__item'):
             product = WebDriverWait(item, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'wc-order-preview-table__column--product')))
             order_item = driver.execute_script("return arguments[0].firstChild.textContent", product)
+
+            address = extract_address(modal)
+
             order_items.append(order_item)
             # order_items.append(item.find_element_by_class_name('wc-order-preview-table__column--product').text)
 
@@ -81,11 +92,8 @@ def get_order_from_row(row_data):
     except TimeoutException as ex:
         print('cannot open detail')
         exit_window()
-    # except NoSuchElementException as ex:
-    # print('[ERROR]: error occurred, skipping detail list for ' + str(number) + '!!!')
-    # modal.find_element_by_css_selector('button.modal-close').click()
 
-    return Order(date, name, number, float(total), order_items)
+    return Order(date, name, number, float(total), order_items, address)
 
 
 def json_default(value):
@@ -106,13 +114,13 @@ try:
     driver.get(WP_HOMEPAGE)
     login(WP_USERNAME, WP_PASSWORD)
 
-    # go to orders
+    # go to orders section
     driver.find_element_by_class_name('processing-orders').click()
     time.sleep(1)
 
     # go to all orders
     # driver.find_element_by_class_name('wc-on-hold').click()
-    driver.find_element_by_class_name('all').click()
+    # driver.find_element_by_class_name('all').click()
 
     page = 1
     orders = []
