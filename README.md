@@ -8,6 +8,6 @@
 - `pip install pyyaml`
 - install browser executable
   - on MacOS just `brew install chromedriver` and then in code `webdriver.Chrome('chromedriver')`
-  - on Windows download chromedriver executable and start with path
-- `pip install pyautogui` for file upload modals
+  - on Windows download chromedriver executable, or gecko for Firefox and set those to be in PATH
+- `pip install pyautogui` and `pip install pydirectinput` for file upload modals
 - `pip install jinja2` for generating html from json

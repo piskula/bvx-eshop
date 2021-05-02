@@ -4,8 +4,8 @@ import yaml
 import json
 import time
 from _datetime import datetime
-from selenium import webdriver
 from model.order import Order
+from model.order_item import OrderItem
 from model.address import Address
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
@@ -15,6 +15,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from pathlib import Path
 import jinja2
 import webbrowser
+from posta.libs.start_browser import start_browser
 
 with open("./config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -23,9 +24,7 @@ WP_HOMEPAGE = cfg['wordpress']['page']
 WP_USERNAME = cfg['wordpress']['username']
 WP_PASSWORD = cfg['wordpress']['password']
 
-driver = webdriver.Chrome(cfg['browser'])
-driver.implicitly_wait(30)
-driver.set_window_size(1400, 900)
+driver = start_browser(1400, 900)
 
 
 def login(user_login, user_pass):
@@ -61,6 +60,11 @@ def extract_address(modal):
     return Address(addressLines[0], addressLines[1] + ' ' + addressLines[2], addressLines[3])
 
 
+def extractPriceFromChild(element):
+    total_currency = element.find_element_by_class_name('woocommerce-Price-currencySymbol').text
+    return float(element.find_element_by_class_name('woocommerce-Price-amount').text.replace(total_currency, ''))
+
+
 def get_order_from_row(row_data):
     number_wrapper = row_data.find_element_by_class_name('column-order_number')
     number_preview = number_wrapper.find_element_by_class_name('order-preview')
@@ -73,8 +77,7 @@ def get_order_from_row(row_data):
     date = date_wrapper.find_element_by_tag_name('time').get_attribute('datetime')
 
     total_wrapper = row_data.find_element_by_class_name('column-order_total')
-    total_currency = total_wrapper.find_element_by_class_name('woocommerce-Price-currencySymbol').text
-    total = total_wrapper.find_element_by_class_name('woocommerce-Price-amount').text.replace(total_currency, '')
+    total = extractPriceFromChild(total_wrapper)
 
     order_items = []
     address = None
@@ -86,12 +89,15 @@ def get_order_from_row(row_data):
                 .find_element_by_tag_name('tbody') \
                 .find_elements_by_css_selector('tr.wc-order-preview-table__item'):
             product = WebDriverWait(item, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'wc-order-preview-table__column--product')))
-            order_item = driver.execute_script("return arguments[0].firstChild.textContent", product)
+            title = driver.execute_script("return arguments[0].firstChild.textContent", product)
 
-            address = extract_address(modal)
+            amount = float(item.find_element_by_class_name('wc-order-preview-table__column--quantity').text)
+            price = extractPriceFromChild(item.find_element_by_class_name('wc-order-preview-table__column--total'))
 
-            order_items.append(order_item)
-            # order_items.append(item.find_element_by_class_name('wc-order-preview-table__column--product').text)
+            if address is None:
+                address = extract_address(modal)
+
+            order_items.append(OrderItem(title, amount, price))
 
         modal.find_element_by_css_selector('button.modal-close').click()
     except TimeoutException as ex:
@@ -112,6 +118,15 @@ def process_orders():
     page = 1
     orders = []
     while True:
+        try:
+            driver.find_element_by_css_selector('table.wp-list-table') \
+                .find_element_by_tag_name('tbody')\
+                .find_element_by_class_name('no-items')
+            print("Page is empty.")
+            break
+        except NoSuchElementException:
+            pass
+
         print("Processing page " + str(page) + "...")
         for row in driver.find_element_by_css_selector('table.wp-list-table') \
                 .find_element_by_tag_name('tbody') \
@@ -135,8 +150,10 @@ def process_orders():
 
 def save_orders_to_json(orders, relative_json_path):
     path = Path(__file__).parent / relative_json_path
-    with open(path, 'x') as f:
-        f.write(json.dumps(orders, default=json_default, ensure_ascii=False))
+    with open(path, 'x', encoding="utf-8") as f:
+        jsonText = json.dumps(orders, default=json_default, ensure_ascii=False)
+        # jsonText = json.dumps(orders, default=json_default, ensure_ascii=True)
+        f.write(jsonText)
 
 
 def fill_orders_with_how_old(orders):
@@ -158,7 +175,7 @@ def generate_html(orders_for_shipping, orders_awaiting_payment):
     )
 
     EXPORT_HTML_PATH = Path(__file__).parent / "./data/order_export.html"
-    with open(EXPORT_HTML_PATH, 'w') as f: f.write(subs)
+    with open(EXPORT_HTML_PATH, 'w', encoding="utf-8") as f: f.write(subs)
     webbrowser.open('file://' + str(EXPORT_HTML_PATH), new=2)
 
 
@@ -179,7 +196,10 @@ try:
     orders_for_shipping = process_orders()
     save_orders_to_json(orders_for_shipping, './data/orders-for-shipping.json')
 
-    driver.find_element_by_class_name('wc-on-hold').click()
+    # go to orders section
+    driver.find_element_by_class_name('wp-menu-name').click()
+    driver.find_element_by_class_name('on-hold-orders').click()
+
     orders_awaiting_payment = process_orders()
     save_orders_to_json(orders_awaiting_payment, './data/orders-awaiting-payment.json')
 

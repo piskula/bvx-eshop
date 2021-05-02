@@ -6,5 +6,5 @@ posta:
   page: 'https://mojezasielky.posta.sk/'
   username: 'specify_user'
   password: 'specify_pass'
-browser: 'chromedriver'
-#browser: '../chromedriver_89.0.4389.23.exe'
+# for browser use chrome or firefox
+browser: 'chrome'
