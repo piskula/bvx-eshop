@@ -10,6 +10,17 @@
             }).get();
             $("#status").text('clicked ' + checkedList);
         }
+
+        function toggleVisibilityForTable(element) {
+            const table = $(element).siblings('table')
+            if (table.is(":hidden")) {
+                table.show();
+                element.innerText = 'Hide details';
+            } else {
+                table.hide();
+                element.innerText = 'Show details';
+            }
+        }
     </script>
     <title>Orders</title>
 </head>
@@ -33,6 +44,23 @@
                     {{value.address.postcode}} {{value.address.city}}</span>
                 <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
             </div>
+            <div>
+                <table style="display: none; margin-top: 1rem;">
+                    <tr>
+                        <th>Title</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                    </tr>
+                    {% for order_item in value.order_items %}
+                    <tr>
+                        <td>{{ order_item.title }}</td>
+                        <td>{{ order_item.amount }}</td>
+                        <td>{{ order_item.price }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                <button style="margin-bottom: 1rem" onclick="toggleVisibilityForTable(this)">Show details</button>
+            </div>
         </li>
         {% endfor %}
     </ul>
@@ -54,6 +82,23 @@
                     {% endif %}
                     {{value.address.postcode}} {{value.address.city}}</span>
                 <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
+            </div>
+            <div>
+                <table style="display: none; margin-top: 1rem;">
+                    <tr>
+                        <th>Title</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                    </tr>
+                    {% for order_item in value.order_items %}
+                    <tr>
+                        <td>{{ order_item.title }}</td>
+                        <td>{{ order_item.amount }}</td>
+                        <td>{{ order_item.price }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                <button style="margin-bottom: 1rem" onclick="toggleVisibilityForTable(this)">Show details</button>
             </div>
         </li>
         {% endfor %}

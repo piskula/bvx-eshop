@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Body>
+        <importSheetRequest>
+            <auth>
+                <userId>{{ userId }}</userId>
+                <apiKey>{{ apiKey }}</apiKey>
+            </auth>
+            <EPH verzia="3.0">
+                <InfoEPH>
+                    <Mena>EUR</Mena>
+                    <TypEPH>1</TypEPH>
+                    <Datum>{{ timestamp }}</Datum>
+                    <PocetZasielok>{{ amount }}</PocetZasielok>
+                    <Uhrada>
+                        <SposobUhrady>5</SposobUhrady>
+                        <SumaUhrady>0.00</SumaUhrady>
+                    </Uhrada>
+                    <DruhZasielky>1</DruhZasielky>
+                    <SposobSpracovania>1</SposobSpracovania>
+                    <Odosielatel>
+                        <Meno/>
+                        <Organizacia>MDDr. Maroš Čižmár</Organizacia>
+                        <Ulica>Kominárska 141/4</Ulica>
+                        <Mesto>Bratislava</Mesto>
+                        <PSC>83104</PSC>
+                        <Krajina>SK</Krajina>
+                        <Telefon>+421908474924</Telefon>
+                        <Telefon>00421908474924</Telefon>
+                        <Email>info@biovoxel.tech</Email>
+                        <CisloUctu>SK9783300000002601597323</CisloUctu>
+                    </Odosielatel>
+                </InfoEPH>
+                <Zasielky>
+                    {% for value in data %}
+
+                    <Zasielka>
+                        <Adresat>
+                            <Meno>{{ value.address.name }}</Meno>
+                            <Organizacia>{{ value.address.company }}</Organizacia>
+                            {% if not value.address.line_2 %}<Ulica>{{ value.address.line_1 }}</Ulica>{% endif %}
+                            {% if value.address.line_2 %}<Ulica>{{ value.address.line_1 }} {{value.address.line_2}}</Ulica>{% endif %}
+                            <Mesto>{{ value.address.city }}</Mesto>
+                            <PSC>{{ value.address.postcode }}</PSC>
+                            <Krajina>{{ value.address.country_code }}</Krajina>
+                            <Telefon>+421949440214</Telefon>
+                            <Email>oravcok.ondro@gmail.com</Email>
+                        </Adresat>
+                        <Info>
+                            <ZasielkaID>{{ value.number }}</ZasielkaID>
+                            <Poznamka/>
+                        </Info>
+                        <PouziteSluzby/>
+                    </Zasielka>
+
+                    {% endfor %}
+                </Zasielky>
+            </EPH>
+
+        </importSheetRequest>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

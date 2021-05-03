@@ -1,10 +1,10 @@
 wordpress:
   page: 'https://biovoxel.tech/wp-admin'
   username: 'specify_user'
-  password: 'specify_pass'
-posta:
-  page: 'https://mojezasielky.posta.sk/'
-  username: 'specify_user'
-  password: 'specify_pass'
+  password: 'specify_password'
 # for browser use chrome or firefox
 browser: 'chrome'
+posta:
+  url: 'https://mojezasielky.posta.sk/integration/webServices/api'
+  userId: 'specify_user'
+  apiKey: 'specify_password'
