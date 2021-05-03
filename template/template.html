@@ -26,7 +26,11 @@
                     </label>
                     <span style="color: gray">{{ value.howOld.days }} days</span>
                 </h3>
-                <span style="width: 22rem; display: inline-block">{{value.address.street}}, {{value.address.city}}</span>
+                <span style="width: 22rem; display: inline-block">
+                    {% if value.address.company %}
+                        <span>{{value.address.company}}, </span>
+                    {% endif %}
+                    {{value.address.postcode}} {{value.address.city}}</span>
                 <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
             </div>
         </li>
@@ -44,7 +48,11 @@
                     </label>
                     <span style="color: red">{{ value.howOld.days }} days</span>
                 </h3>
-                <span style="width: 22rem; display: inline-block">{{value.address.street}}, {{value.address.city}}</span>
+                <span style="width: 22rem; display: inline-block">
+                    {% if value.address.company %}
+                        <span>{{value.address.company}}, </span>
+                    {% endif %}
+                    {{value.address.postcode}} {{value.address.city}}</span>
                 <span style="width: 10rem; display: inline-block">Sum: {{ "%.2f EUR"|format(value.total) }}</span>
             </div>
         </li>

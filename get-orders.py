@@ -8,10 +8,8 @@ from model.order import Order
 from model.order_item import OrderItem
 from model.address import Address
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 from pathlib import Path
 import jinja2
 import webbrowser
@@ -28,7 +26,9 @@ driver = start_browser(1400, 900)
 
 
 def login(user_login, user_pass):
+    time.sleep(0.2)
     driver.find_element_by_id('user_login').send_keys(user_login)
+    time.sleep(0.2)
     driver.find_element_by_id('user_pass').send_keys(user_pass)
     driver.find_element_by_id('wp-submit').click()
 
@@ -80,30 +80,48 @@ def get_order_from_row(row_data):
     total = extractPriceFromChild(total_wrapper)
 
     order_items = []
-    address = None
 
-    number_preview.click()
-    try:
-        modal = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'wc-backbone-modal-content')))
-        for item in modal.find_element_by_css_selector('table.wc-order-preview-table') \
-                .find_element_by_tag_name('tbody') \
-                .find_elements_by_css_selector('tr.wc-order-preview-table__item'):
-            product = WebDriverWait(item, 5).until(EC.presence_of_element_located((By.CLASS_NAME, 'wc-order-preview-table__column--product')))
-            title = driver.execute_script("return arguments[0].firstChild.textContent", product)
+    ActionChains(driver) \
+        .key_down(Keys.CONTROL) \
+        .click(number_view) \
+        .key_up(Keys.CONTROL) \
+        .perform()
+    driver.switch_to.window(driver.window_handles[1])
 
-            amount = float(item.find_element_by_class_name('wc-order-preview-table__column--quantity').text)
-            price = extractPriceFromChild(item.find_element_by_class_name('wc-order-preview-table__column--total'))
+    data_container = driver.find_element_by_class_name('order_data_column_container')
+    data_container.find_element_by_css_selector('div:nth-child(3) > h3')\
+        .find_element_by_class_name('edit_address').click()
+    name = data_container.find_element_by_id('_shipping_first_name').get_attribute('value')
+    surname = data_container.find_element_by_id('_shipping_last_name').get_attribute('value')
+    company = data_container.find_element_by_id('_shipping_company').get_attribute('value')
+    addr_line_1 = data_container.find_element_by_id('_shipping_address_1').get_attribute('value')
+    addr_line_2 = data_container.find_element_by_id('_shipping_address_2').get_attribute('value')
+    city = data_container.find_element_by_id('_shipping_city').get_attribute('value')
+    postcode = data_container.find_element_by_id('_shipping_postcode').get_attribute('value')
+    country = data_container.find_element_by_id('select2-_shipping_country-container').text
+    address = Address(
+        name=name + ' ' + surname,
+        company=company,
+        line_1=addr_line_1,
+        line_2=addr_line_2,
+        city=city,
+        postcode=postcode,
+        country=country,
+    )
 
-            if address is None:
-                address = extract_address(modal)
+    for item in driver.find_element_by_id('order_line_items') \
+            .find_elements_by_css_selector('tr.item'):
+        item_name = item.find_element_by_class_name('wc-order-item-name').text
+        item_price = float(item.find_element_by_class_name('item_cost').get_attribute('data-sort-value'))
+        item_amount = item.find_element_by_class_name('quantity').find_element_by_class_name('view').text
+        order_items.append(
+            OrderItem(
+                title=item_name, amount=item_amount, price=item_price
+            )
+        )
 
-            order_items.append(OrderItem(title, amount, price))
-
-        modal.find_element_by_css_selector('button.modal-close').click()
-    except TimeoutException as ex:
-        print('cannot open detail')
-        exit_window()
-
+    driver.close()
+    driver.switch_to.window(driver.window_handles[0])
     return Order(date, name, number, float(total), order_items, address)
 
 
@@ -118,6 +136,7 @@ def process_orders():
     page = 1
     orders = []
     while True:
+        # check for empty page:
         try:
             driver.find_element_by_css_selector('table.wp-list-table') \
                 .find_element_by_tag_name('tbody')\
@@ -133,8 +152,6 @@ def process_orders():
                 .find_elements_by_css_selector('tr'):
             order = get_order_from_row(row)
             orders.append(order)
-            # break #tmp
-            # print(order)
 
         # TODO solve problem with click on next page, sleep did not help
         # if page == 2:
@@ -150,9 +167,9 @@ def process_orders():
 
 def save_orders_to_json(orders, relative_json_path):
     path = Path(__file__).parent / relative_json_path
+    # TODO delete previous file if exists
     with open(path, 'x', encoding="utf-8") as f:
         jsonText = json.dumps(orders, default=json_default, ensure_ascii=False)
-        # jsonText = json.dumps(orders, default=json_default, ensure_ascii=True)
         f.write(jsonText)
 
 
